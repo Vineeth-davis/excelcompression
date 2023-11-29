@@ -16,14 +16,13 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 
 # from excel_conversion_project.jobs import updater
 from .tasks import *
-sched = BlockingScheduler()
+# sched = BlockingScheduler()
 
 
-#import background
+
 def run_process_tasks_background():
     subprocess.run(["python", "manage.py", "process_tasks"])
 
-from celery import shared_task
 
 
 
@@ -44,16 +43,6 @@ def process_and_generate_excel_background(file, file_type, selected_columns, col
     df_selected.to_excel(excel_file_path, index=False)
 
     return excel_file_path
-
-
-
-def loopfunc(schedule_time):
-
-    current_time = datetime.now()
-    if current_time == schedule_time:
-        return True
-    else:
-        loopfunc(loopfunc(schedule_time))
 
 
 def process_and_generate_excel(file, file_type, selected_columns, column_names, file_path):
@@ -86,6 +75,13 @@ def schedule_task(file, file_type, selected_columns, column_names, file_path):
     except Exception as e:
         print(f"An error occurred: {e}")
         return 'error'
+def s(request):
+    return schedule_task
+
+def ready(hour,minutes,seconds):
+    from jobs import updater
+    updater.start(hour, minutes, seconds)
+
 
 def upload_file(request):
     if request.method == 'POST':
@@ -106,11 +102,17 @@ def upload_file(request):
                 file_path = os.path.join(output_file_path, new_file_name)
 
                 if schedule_time:
-
                     scheduled_datetime = timezone.datetime.combine(timezone.now().date(), schedule_time)
                     print("scheduled_datetime::::",scheduled_datetime)
+                    # excel_file_path = ready(schedule_time)
+                    scheduled_time = str(schedule_time)
+                    hour, minutes, seconds = map(int, scheduled_time.split(':'))
+                    excel_file_path = ready(hour, minutes, seconds)
+                    print("--excel_file_path---",excel_file_path)
+
+                    #os.environ.setdefault('SCHEDULED_TIME', schedule_time.strftime('%H:%M:%S'))
                     # sched.add_job(process_and_generate_excel(file, file_type, selected_columns, column_names, file_path), 'date', run_date='2009-11-06 16:30:05', args=['text'])
-                    excel_file_path = run_task(scheduled_datetime)
+                    #excel_file_path = run_task(scheduled_datetime)
 
                     #return JsonResponse({'status': 'success', 'message': 'Excel file created successfully!'})
                     #excel_file_path = sched.add_job(process_and_generate_excel(file, file_type, selected_columns,

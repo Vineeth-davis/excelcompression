@@ -1,6 +1,6 @@
 from datetime import datetime
-from .jobs import my_job
-from excel_conversion_project.excel_conversion_app.views import process_and_generate_excel
+from .jobs import my_task
+# from excel_conversion_project.excel_conversion_app.views import process_and_generate_excel
 # from apscheduler.scheduler.backgrounds import BackgroundScheduler
 # from .jobs import schedule_task
 #
@@ -9,15 +9,21 @@ from excel_conversion_project.excel_conversion_app.views import process_and_gene
 
 from apscheduler.schedulers.background import BlockingScheduler,BackgroundScheduler
 
+def start(hour,minutes,seconds):
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(my_task, 'cron', hour=hour, minute=minutes, second=seconds)
+    scheduler.start()
 
-def run_task(scheduled_datetime):
-    if scheduled_datetime:
-        scheduler= BackgroundScheduler()
-        # scheduler.add_job(schedule_task,'interval',seconds=20)
-        scheduler.add_job(process_and_generate_excel, 'cron', hour=12, minute=50, second=0)
 
-        scheduler.start()
-        print(f"scheduled task {scheduled_datetime}")
+
+# def run_task(scheduled_datetime):
+#     if scheduled_datetime:
+#         scheduler= BackgroundScheduler()
+#         # scheduler.add_job(schedule_task,'interval',seconds=20)
+#         scheduler.add_job(process_and_generate_excel, 'cron', hour=18, minute=50, second=0)
+#
+#         scheduler.start()
+#         print(f"scheduled task {scheduled_datetime}")
 
 # count = 0
 
