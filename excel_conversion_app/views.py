@@ -1,4 +1,6 @@
 import os
+from datetime import timedelta
+from django.utils.timezone import make_aware
 import pandas as pd
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -48,7 +50,11 @@ def upload_file(request):
 
                 if schedule_time:
                     scheduled_datetime = timezone.datetime.combine(timezone.now().date(), schedule_time)
+                    scheduled_datetime = make_aware(scheduled_datetime)
+                    if scheduled_datetime <= timezone.now():
+                        scheduled_datetime += timedelta(days=1)
 
+                    scheduled_datetime = str(scheduled_datetime).split('+')[0]
                     scheduler = BackgroundScheduler()
                     file_content = file.read()
 
