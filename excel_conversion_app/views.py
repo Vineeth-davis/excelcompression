@@ -52,7 +52,7 @@ def upload_file(request):
                     scheduler = BackgroundScheduler()
                     file_content = file.read()
 
-                    # Add a job to the scheduler
+
                     try:
                         scheduler.add_job(process_and_generate_excel, 'date', run_date=scheduled_datetime,
                                       args=[file_content, file_type, selected_columns, column_names, file_path])
@@ -66,7 +66,7 @@ def upload_file(request):
                         return JsonResponse({f'status': 'error while scheduling task', 'message': 'Error while scheduling task Excel file.'})
 
                 else:
-                    # Process the file immediately
+
                     file_content = file.read()
                     excel_file_path = process_and_generate_excel(file_content, file_type, selected_columns, column_names, file_path)
 
