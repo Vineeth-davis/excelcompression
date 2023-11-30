@@ -1,23 +1,24 @@
 import os
-import time
-
 import pandas as pd
 from django.http import JsonResponse
 from django.shortcuts import render
 from .forms import FileUploadForm
-import datetime
 from django.utils import timezone
+from io import BytesIO
 
+from apscheduler.schedulers.background import BackgroundScheduler
 
+def process_and_generate_excel(file_content, file_type, selected_columns, column_names, file_path):
 
+    file_like_object = BytesIO(file_content)
 
-def process_and_generate_excel(file, file_type, selected_columns, column_names, file_path):
     if file_type == 'csv':
-        df = pd.read_csv(file, sep=',')
+        df = pd.read_csv(file_like_object, sep=',')
     elif file_type == 'tsv':
-        df = pd.read_csv(file, sep='\t')
+        df = pd.read_csv(file_like_object, sep='\t')
     else:
         return None
+
     if not column_names:
         default_column_names = list(df.columns[selected_columns])
         column_names = default_column_names
@@ -28,12 +29,6 @@ def process_and_generate_excel(file, file_type, selected_columns, column_names, 
     df_selected.to_excel(excel_file_path, index=False)
 
     return excel_file_path
-
-
-def ready(hour,minutes,seconds):
-    from ..jobs import updater
-    updater.start(hour, minutes, seconds)
-
 
 def upload_file(request):
     if request.method == 'POST':
@@ -53,28 +48,28 @@ def upload_file(request):
 
                 if schedule_time:
                     scheduled_datetime = timezone.datetime.combine(timezone.now().date(), schedule_time)
-                    print("scheduled_datetime::::",scheduled_datetime)
-                    # excel_file_path = ready(schedule_time)
-                    schedule_time = str(schedule_time)
-                    #print(scheduled_time)
-                    hour, minutes, seconds = map(str, schedule_time.split(':'))
-                    print(hour, minutes, seconds)
 
-                    os.environ.setdefault('SCHEDULED_TIME', schedule_time)
+                    scheduler = BackgroundScheduler()
+                    file_content = file.read()
 
-                    os.environ.setdefault('FILE_PATH', schedule_time)
-                    os.environ.setdefault('COLUMN_NAMES', schedule_time)
-                    os.environ.setdefault('SELECTED_COLUMNS', schedule_time)
-                    os.environ.setdefault('FILE_TYPE', schedule_time)
-                    os.environ.setdefault('FILE', schedule_time)
+                    # Add a job to the scheduler
+                    try:
+                        scheduler.add_job(process_and_generate_excel, 'date', run_date=scheduled_datetime,
+                                      args=[file_content, file_type, selected_columns, column_names, file_path])
 
-                    excel_file_path = ready(hour, minutes, seconds)
-                    print("--excel_file_path---",excel_file_path)
+                        scheduler.start()
 
-
+                        return JsonResponse(
+                            {f'status': 'successfully scheduled task', 'message': f'Excel file will be created {scheduled_datetime}'})
+                    except Exception as e:
+                        print(e)
+                        return JsonResponse({f'status': 'error while scheduling task', 'message': 'Error while scheduling task Excel file.'})
 
                 else:
-                    excel_file_path = process_and_generate_excel(file, file_type, selected_columns, column_names, file_path)
+                    # Process the file immediately
+                    file_content = file.read()
+                    excel_file_path = process_and_generate_excel(file_content, file_type, selected_columns, column_names, file_path)
+
                 if excel_file_path:
                     return JsonResponse({'status': 'success', 'message': 'Excel file created successfully!'})
                 else:
@@ -86,5 +81,3 @@ def upload_file(request):
         form = FileUploadForm()
 
     return render(request, 'upload_file.html', {'form': form})
-
-
