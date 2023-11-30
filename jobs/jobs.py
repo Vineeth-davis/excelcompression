@@ -2,7 +2,11 @@ from django.conf import settings
 # from excel_conversion_project.excel_conversion_app.views import process_and_generate_excel
 #
 import json
+import os
 import pandas as pd
+from ..excel_conversion_app.views import process_and_generate_excel
+
+
 def my_task(file, file_type, selected_columns, column_names, file_path):
     if file_type == 'csv':
         df = pd.read_csv(file, sep=',')
@@ -21,25 +25,14 @@ def my_task(file, file_type, selected_columns, column_names, file_path):
     print("task is doen")
 
     return excel_file_path
-from datetime import date
 
-from apscheduler.schedulers.blocking import BlockingScheduler
-
-
-# sched = BlockingScheduler()
-#
-# count = 0
-# def my_job():
-#
-#     print(text)
-#     # global count, sched
-#     #
-#     # # Execute the job till the count of 5
-#     # count = count + 1
-#     # if count == 1:
-#     #     sched.remove_job()
-#
-# # The job will be executed on November 6th, 2009
-# sched.add_job(my_job, 'date', run_date='2023-11-29 01:06:55', args=['text'])
-#
-# sched.start()
+def my_scheduled_task():
+    scheduled_time = os.environ.get('SCHEDULED_TIME')
+    file = os.environ.get('FILE')
+    file_type = os.environ.get('FILE_TYPE')
+    selected_columns = os.environ.get('SELECTED_COLUMNS')
+    column_names = os.environ.get('COLUMN_NAMES')
+    file_path = os.environ.get('FILE_PATH')
+    excel_file_path = process_and_generate_excel(file, file_type, selected_columns, column_names, file_path)
+    print("scheduled job done")
+    return excel_file_path
